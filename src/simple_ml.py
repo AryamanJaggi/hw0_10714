@@ -47,8 +47,23 @@ def parse_mnist(image_filename, label_filename):
                 labels of the examples.  Values should be of type np.uint8 and
                 for MNIST will contain the values 0-9.
     """
+
     ### BEGIN YOUR CODE
-    pass
+    with gzip.open(image_filename, 'rb') as f:
+        data = f.read()  # returns raw bytes, already decompressed  
+
+    magic, num_images, rows, cols = struct.unpack('>IIII', data[:16])
+    magic, num_labels = struct.unpack('>II', data[:8])
+
+    pixels = np.frombuffer(data[16:], dtype=np.uint8)
+    X = pixels.reshape(num_images, rows*cols)
+
+    y = np.frombuffer(data[8:], dtype=np.uint8)
+
+    return (X,y)
+
+
+    
     ### END YOUR CODE
 
 
