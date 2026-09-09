@@ -52,13 +52,17 @@ def parse_mnist(image_filename, label_filename):
     with gzip.open(image_filename, 'rb') as f:
         data = f.read()  # returns raw bytes, already decompressed  
 
+    with gzip.open(label_filename, 'rb') as f:
+            labels = f.read()  # returns raw bytes, already decompressed  
+
     magic, num_images, rows, cols = struct.unpack('>IIII', data[:16])
-    magic, num_labels = struct.unpack('>II', data[:8])
+    magic, num_labels = struct.unpack('>II', labels[:8])
 
     pixels = np.frombuffer(data[16:], dtype=np.uint8)
     X = pixels.reshape(num_images, rows*cols)
+    X = X.astype(np.float32)/255.0
 
-    y = np.frombuffer(data[8:], dtype=np.uint8)
+    y = np.frombuffer(labels[8:], dtype=np.uint8)
 
     return (X,y)
 
