@@ -87,7 +87,17 @@ def softmax_loss(Z, y):
         Average softmax loss over the sample.
     """
     ### BEGIN YOUR CODE
-    pass
+
+    #generate row indixed, ex [0,1,2,3,4...batch_size-1]
+    row_indices = np.arange(Z.shape[0])
+
+    #for each batch, just the probablity of the true class
+    #may need to come back to this is y does not start at class 0 and starts at class 1 instead
+    selected = Z[row_indices, y]
+
+    transformed = np.log(np.exp(Z).sum(1))
+    
+    return (transformed - selected).mean()
     ### END YOUR CODE
 
 
