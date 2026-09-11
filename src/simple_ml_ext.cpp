@@ -33,7 +33,62 @@ void softmax_regression_epoch_cpp(const float *X, const unsigned char *y,
      */
 
     /// BEGIN YOUR CODE
+    // Helper buffers: normalized logits for a batch, and the gradient of theta
+    float *Z = new float[batch * k];
+    float *grad = new float[n * k];
 
+    for (size_t start = 0; start < m; start += batch) {
+        size_t b = (m - start < batch) ? (m - start) : batch;  // last batch may be smaller
+
+        // Z = normalize(exp(X_b * theta)) - I_y,  shape (b, k)
+        for (size_t i = 0; i < b; i++) {
+            const float *x = X + (start + i) * n;
+            float *z = Z + i * k;
+
+            for (size_t j = 0; j < k; j++) {
+                float s = 0.0f;
+                for (size_t l = 0; l < n; l++) {
+                    s += x[l] * theta[l * k + j];
+                }
+                z[j] = s;
+            }
+
+            // softmax (subtract max for numerical stability)
+            float zmax = z[0];
+            for (size_t j = 1; j < k; j++) if (z[j] > zmax) zmax = z[j];
+            float total = 0.0f;
+            for (size_t j = 0; j < k; j++) {
+                z[j] = std::exp(z[j] - zmax);
+                total += z[j];
+            }
+            for (size_t j = 0; j < k; j++) z[j] /= total;
+
+            z[y[start + i]] -= 1.0f;
+        }
+
+        // grad = X_b^T * Z / b,  shape (n, k)
+        for (size_t idx = 0; idx < n * k; idx++) grad[idx] = 0.0f;
+        for (size_t i = 0; i < b; i++) {
+            const float *x = X + (start + i) * n;
+            const float *z = Z + i * k;
+            for (size_t l = 0; l < n; l++) {
+                float xl = x[l];
+                if (xl == 0.0f) continue;  // MNIST is sparse; skip zero pixels
+                for (size_t j = 0; j < k; j++) {
+                    grad[l * k + j] += xl * z[j];
+                }
+            }
+        }
+
+        // theta -= lr * grad
+        float scale = lr / static_cast<float>(b);
+        for (size_t idx = 0; idx < n * k; idx++) {
+            theta[idx] -= scale * grad[idx];
+        }
+    }
+
+    delete[] Z;
+    delete[] grad;
     /// END YOUR CODE
 }
 

@@ -120,7 +120,26 @@ def softmax_regression_epoch(X, y, theta, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    num_examples = X.shape[0]
+    for start in range(0, num_examples, batch):
+        X_b = X[start:start + batch]
+        y_b = y[start:start + batch]
+        m = X_b.shape[0]  # last batch may be smaller than `batch`
+ 
+        # Z = normalize(exp(X_b @ theta)), shape (m, num_classes)
+        logits = X_b @ theta
+        logits = logits - logits.max(axis=1, keepdims=True)  # numerical stability
+        Z = np.exp(logits)
+        Z /= Z.sum(axis=1, keepdims=True)
+ 
+        # Z - I_y, done in place
+        Z[np.arange(m), y_b] -= 1
+ 
+        # gradient = X^T (Z - I_y) / m, shape (input_dim, num_classes)
+        grad = X_b.T @ Z / m
+ 
+        # in-place update so the caller's theta is modified
+        theta -= lr * grad
     ### END YOUR CODE
 
 
@@ -147,7 +166,30 @@ def nn_epoch(X, y, W1, W2, lr = 0.1, batch=100):
         None
     """
     ### BEGIN YOUR CODE
-    pass
+    num_examples = X.shape[0]
+    for start in range(0, num_examples, batch):
+        X_b = X[start:start + batch]
+        y_b = y[start:start + batch]
+        m = X_b.shape[0]
+ 
+        # forward pass
+        Z1 = np.maximum(X_b @ W1, 0)                 # (m, hidden_dim)
+        logits = Z1 @ W2                             # (m, num_classes)
+        logits = logits - logits.max(axis=1, keepdims=True)
+        S = np.exp(logits)
+        S /= S.sum(axis=1, keepdims=True)
+ 
+        # backward pass
+        G2 = S
+        G2[np.arange(m), y_b] -= 1                   # normalize(exp(Z1 W2)) - I_y
+        G1 = (Z1 > 0) * (G2 @ W2.T)                  # (m, hidden_dim)
+ 
+        grad_W1 = X_b.T @ G1 / m                     # (input_dim, hidden_dim)
+        grad_W2 = Z1.T @ G2 / m                      # (hidden_dim, num_classes)
+ 
+        # in-place updates
+        W1 -= lr * grad_W1
+        W2 -= lr * grad_W2
     ### END YOUR CODE
 
 
